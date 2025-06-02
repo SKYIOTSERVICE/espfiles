@@ -5,7 +5,7 @@
 #define rst D0
 #define dio0 D4
 #define networkid "1008"
-#define deviceid "1001"
+#define deviceid "1008"
  
 int counter = 10;
 const int tonepin = D1;

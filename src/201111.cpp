@@ -5,14 +5,14 @@
 #define ss 15
 #define rst 16
 #define dio0 2
-#define networkid "1023"
+#define networkid "2011"
 #define deviceid "01"
  
-int counter = 10;
-const int hsen = D2;
-const int lsen = D9;
-const int hpin = D1;
-const int sled = LED_BUILTIN;
+int counter = 1;
+const int hsen = D1;
+const int lsen = D2;
+const int spin = LED_BUILTIN;
+
 int value = 11;
 int state=0;
 int vstate1=2;
@@ -21,8 +21,9 @@ int volt_state=1;
 int temp_count1=0;
 int temp_count2=0;
 int temp_count3=0;
-int rnum = 3;
-int rnum1 = 1;
+const int ug_sensor = D7;
+int ug_sensorstatus=0;
+int ug_sensorcount=0;
  
 void setup() 
 {
@@ -30,10 +31,9 @@ void setup()
   pinMode(D0, WAKEUP_PULLUP);
   pinMode(hsen, INPUT_PULLUP); 
   pinMode(lsen, INPUT_PULLUP);
-  pinMode(hpin, OUTPUT);
-  pinMode(sled, OUTPUT);
-  digitalWrite(hpin,LOW);
-  digitalWrite(sled,HIGH);
+  pinMode(spin, OUTPUT);
+   pinMode(ug_sensor, INPUT_PULLUP);
+
   while (!Serial);
   Serial.println("LoRa Sender");
   LoRa.setPins(ss, rst, dio0);    //setup LoRa transceiver module
@@ -51,51 +51,53 @@ void setup()
 
 void send_data(){
   int i;
-  for(i=0;i<=(10);i++){
+  for(i=0;i<=(20);i++){
     LoRa.beginPacket();   //Send LoRa packet to receiver
     LoRa.print(networkid);
     LoRa.print(deviceid);
     LoRa.print(vstate1);
     LoRa.print(vstate2);
     LoRa.endPacket(); 
-    Serial.print(".");
-    delay(100);
+    // Serial.print(".");
+    // Serial.print(networkid);
+    // Serial.print(deviceid);
+    // Serial.print(vstate1);
+    // Serial.print(vstate2);
+    
+    delay(200);
   }
   Serial.println("");
 }
  
 void loop() 
-{
+{  
+  ug_sensorstatus=digitalRead(ug_sensor);
+  Serial.println("ug_sensorstatus:");
+  Serial.println(ug_sensorstatus);
 
   Serial.print("Sending packet: ");
   Serial.println(counter);
 
-  if(digitalRead(hsen)==0 && digitalRead(hpin)==1){
+  if(digitalRead(hsen)==0){
     temp_count1=temp_count1+1;
-    Serial.println("temp count");
+    Serial.println("Water High...");
     Serial.println(temp_count1);
     if(temp_count1>=3){
-      state=2;
       vstate1=0;
       vstate2=0;
-    }
-    if(temp_count1>=15){
-      Serial.println("LOW....");
-      digitalWrite(hpin, LOW);
       temp_count1=0;
+      Serial.println("High....");
     }
   }else{
     temp_count1=0;
   }
 
-  if(digitalRead(lsen)==0 && digitalRead(hpin)==0){
+  if(digitalRead(lsen)==0){
     temp_count2=temp_count2+1;
-    Serial.println("temp count");
+    Serial.println("Water Low...");
     Serial.println(temp_count2);
     if(temp_count2>=3){
-      Serial.println("HIGH...");
-      digitalWrite(hpin, HIGH);
-      state=1;
+      Serial.println("Low...");
       vstate1=1;
       vstate2=1;
       temp_count2=0;
@@ -106,15 +108,14 @@ void loop()
 
   //=======================
 
-  if(digitalRead(hpin)==1 && digitalRead(lsen)!=0){
+  if(digitalRead(lsen)!=0 && digitalRead(hsen)!=0){
     temp_count3=temp_count3+1;
-    if(temp_count3>=3){
-      state=2;
-      vstate1=0;
-      vstate2=0;
-    }
+    Serial.println("temp count");
+    Serial.println(temp_count2);
     if(temp_count3>=10){
-      digitalWrite(hpin, LOW);
+      Serial.println("Normal......");
+      vstate1=2;
+      vstate2=2;
       temp_count3=0;
     }
   }else{
@@ -123,12 +124,11 @@ void loop()
 
   counter++;
   if(counter>=200){
-    counter=10;
+    counter=1;
   }
   send_data();
-  digitalWrite(sled,LOW);
-  delay(50);
-  digitalWrite(sled,HIGH);
-  delay(50);
+  digitalWrite(spin,LOW);
+  delay(500);
+  digitalWrite(spin,HIGH);
   delay(2000);
 }

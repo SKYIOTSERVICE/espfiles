@@ -18,58 +18,56 @@ int value1 = 1;
 int value2 = 2;
 byte memval1;
 byte memval2;
+int sensor_status=2;
 
-const int ot_sensor = D1;
-const int ut_sensor = D1;
 const int buzzer = D2;
 const int input1 = D9;
-int ot_sensorstatus=1;
-int ut_sensorstatus=1;
-int error_sensorstatus=1;
-int ot_sensorcount=0;
-int ut_sensorcount=0;
 int lora_pac_count=0;
+int tcount1=0;
+int tcount2=0;
+int tcount3=0;
 
 int motor_status=0;
-int motor_status_manual=0;
 int motor_time=0;
 int empty_start=0;
 int value_count=0;
 int motor_duration=30;
 int motor_stoptime=0;
-int tank_size, len;
 int count=0;
 int sound=0;
+int temp_count1=0;
 
 const uint8_t seg_empty[] = {
-  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G,           
-  SEG_D,   
-  SEG_D,                           
-  SEG_D           
-  };
+  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G,         // E
+  SEG_E | SEG_F | SEG_B | SEG_C | SEG_G,         // M (approximation)
+  SEG_A | SEG_B | SEG_E | SEG_F | SEG_G,         // P
+  SEG_D | SEG_E | SEG_F | SEG_G                  // T
+};
+
 
 const uint8_t seg_full[] = {
-  SEG_A | SEG_G | SEG_F | SEG_E,           
-  SEG_A | SEG_G | SEG_F | SEG_E,   
-  SEG_D,                           
-  SEG_D           
-  };
+  SEG_A | SEG_E | SEG_F | SEG_G,                 // F
+  SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,         // U
+  SEG_D | SEG_E | SEG_F,                         // L
+  SEG_D | SEG_E | SEG_F                          // L
+};
+
 
 TM1637Display display(CLK, DIO);
   uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
   uint8_t blank[] = { 0x00, 0x00, 0x00, 0x00 };
-  uint8_t data_full[] = { 0x15, 0x15, 0x00, 0x00 };
-  uint8_t data_empty[] = { 0x14, 0x00, 0x00, 0x00 };
+  uint8_t data_full[]  = { 0x71, 0x3E, 0x38, 0x38 }; 
+  uint8_t data_empty[] = { 0x79, 0x76, 0x73, 0x78 };
 
 void setup() {
   Serial.begin(115200); // Starts the serial communication
   EEPROM.begin(512);
   pinMode(input1, INPUT_PULLUP);  
   pinMode(buzzer, OUTPUT);
-  pinMode(ot_sensor, INPUT_PULLUP);
-  pinMode(ut_sensor, INPUT_PULLUP);
-  digitalWrite(buzzer, HIGH);
-  motor_status=1;  
+  //pinMode(ot_sensor, INPUT_PULLUP);
+  //pinMode(ut_sensor, INPUT_PULLUP);
+  digitalWrite(buzzer, LOW);
+  motor_status=0;  
   delay(1000);
   memval1=EEPROM.read(addr1);
   motor_duration=memval1;
@@ -159,26 +157,64 @@ void loop() {
       String LoRaData = LoRa.readString();
       Serial.println(LoRaData); 
       String deviceid=LoRaData.substring(0,4);
-      String devicestatus=LoRaData.substring(8,10);
-      display.setSegments(seg_full);
+      String devicestatus=LoRaData.substring(6,8);
       Serial.println(deviceid);
       Serial.println(devicestatus);
-      if(deviceid.equals("1011")){
-        lora_pac_count++;
+      if(deviceid.equals("2011") && devicestatus.equals("00")){
+        display.clear();
+        display.setSegments(seg_full);
+        delay(500);
+        tcount1++;
         Serial.print("Packets:");
-        Serial.println(lora_pac_count);
-        if(lora_pac_count>=5){
+        Serial.println(tcount1);
+        if(tcount1>=3 && digitalRead(buzzer)==1){
           Serial.println("Tank Full.........");
           digitalWrite(buzzer, LOW);
           motor_status=0;
-          ot_sensorcount=0;
           display.showNumberDec(0,false); 
           motor_time=(motor_duration)*60;
-          lora_pac_count=0;
+          tcount1=0;
+          sensor_status=0;
         }
       }
+      else{
+        tcount1=0;
+      }
+
+
+      if(deviceid.equals("2011") && devicestatus.equals("11") ){
+        tcount2++;
+        Serial.print("Packets:");
+        Serial.println(tcount2);
+        display.clear();
+        display.setSegments(seg_empty);
+        if(tcount2>=3){
+          Serial.println("Tank Empty.........");
+          digitalWrite(buzzer, HIGH);
+          motor_status=1; 
+          tcount2=0;
+          sensor_status=1;
+        }
+      }else{
+        tcount2=0;
+      }
+
+      if(deviceid.equals("2011") && devicestatus.equals("22")){
+        tcount3++;
+        Serial.print("Packets:");
+        Serial.println(lora_pac_count);
+        display.clear();
+        if(tcount3>=2){
+          Serial.println("Tank No Data.........");
+          tcount3=0;
+          sensor_status=2;
+        }
+      }else{
+        tcount3=0;
+      }
+
     }
-    Serial.print("' with RSSI ");         // print RSSI of packet
+    Serial.print("RSSI :");         // print RSSI of packet
     Serial.println(LoRa.packetRssi());
   }
 
@@ -187,58 +223,27 @@ void loop() {
   Serial.println(motor_status);
   Serial.print("Motor Duration:");
   Serial.println(motor_duration);
-  ot_sensorstatus=digitalRead(ot_sensor);
-  ut_sensorstatus=digitalRead(ut_sensor);
   Serial.print("Motor Time:");
   Serial.println(motor_time); 
-  Serial.print("HighWater Tank Status:");
-  Serial.println(ot_sensorstatus);
-  Serial.print("LowWater Status:");
-  Serial.println(ut_sensorstatus);
+  Serial.print("Tank Status:");
+  Serial.println(sensor_status);
+
 
   if(digitalRead(input1)==0){
     Serial.println("Button Clicked...!");
-    if(motor_status_manual==0){
+    if(digitalRead(buzzer)==0){
       digitalWrite(buzzer,HIGH);
-      motor_status_manual=1;
       motor_status=1;
       motor_time=motor_duration*60;
       value_count=15;
-    }else{
-      if(motor_status_manual==1){
+    }else{ 
+      if(digitalRead(buzzer)==1){
         digitalWrite(buzzer,LOW);
         Serial.println("Motor is now stopped..!");
-        motor_status_manual=0;
         motor_status=0;
         value_count=0;
-      }
-    } 
-  }
-  
-  if(ot_sensorstatus==0){
-    display.setSegments(seg_full);
-  }else{
-  }
-
-  if(ut_sensorstatus==0){
-    Serial.println(ut_sensorcount);
-    Serial.println("Tank Empty");
-    display.setSegments(seg_empty);
-    if(ut_sensorcount>=20){
-      if(digitalRead(buzzer)!=1){
-         Serial.println("Water tank is still empty, turning on the Motor");
-         motor_time=(motor_duration)*60;
-         digitalWrite(buzzer, HIGH);
-         motor_status=1;
-      }
-      ut_sensorcount=0;
     }
-   ut_sensorcount=ut_sensorcount+1;
-   delay(500);
-  }else{
-    ut_sensorcount=0;
-    delay(500);
-    display.showNumberDec(0,false);
+   }
   }
 
   if(digitalRead(buzzer)==1){
@@ -246,25 +251,27 @@ void loop() {
    Serial.println("Motor Running..!");
    display.showNumberDec(1, false, 1, 0);
    display.showNumberDec((motor_time/60)+1,false);  
-   if(motor_time<=0 || ot_sensorstatus==0 || error_sensorstatus==0){
+   if(motor_time<=0 || sensor_status==0){
     Serial.print("Sensor Count:");
-    Serial.println(ot_sensorcount);
+    Serial.println(sensor_status);
     Serial.println("Tank Full or Timed Out..!");
-    ot_sensorcount=ot_sensorcount+1;
-      if(ot_sensorcount>=5){
+    temp_count1=temp_count1+1;
+      if(temp_count1>=5){
+        display.clear();
         digitalWrite(buzzer, LOW);
         motor_status=0;
-        ot_sensorcount=0;
+        temp_count1=0;
         display.showNumberDec(0,false); 
         motor_time=(motor_duration)*60;
       }else{
       //ot_sensorcount=0;
       } 
    }else{
-    ot_sensorcount=0;
+    temp_count1=0;
    }
+   delay(500);
   }
+
   delay(500);
   count=count+1;
-
  }

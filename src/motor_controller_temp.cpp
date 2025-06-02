@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include <TM1637Display.h>
 
+// Custom Code for KLE
+
 /*
 const uint8_t SEG_DONE[] = {
   SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,           // d
@@ -184,27 +186,28 @@ void loop() {
     digitalWrite(ot_status,LOW);
   }
 
-  if(ut_sensorstatus==0){
-    Serial.println(ut_sensorcount);
-    Serial.println("Tank Empty");
-    display.setSegments(seg_empty);
-    digitalWrite(ut_status,HIGH);
-    if(ut_sensorcount>=20){
+  
+  if(ot_sensorstatus==0){
+    Serial.println(ot_sensorcount);
+    Serial.println("Tank Full");
+    display.setSegments(seg_full);
+    digitalWrite(ot_status,HIGH);
+    if(ot_sensorcount>=5){
       if(digitalRead(buzzer)!=1){
-         Serial.println("Water tank is still empty, turning on the Motor");
+         Serial.println("KLE Water tank is full, turning on the Motor");
          motor_time=(motor_duration)*60;
-         digitalWrite(buzzer, HIGH);
+         digitalWrite(buzzer,HIGH);
          motor_status=1;
       }
-      ut_sensorcount=0;
+      ot_sensorcount=0;
     }
-   ut_sensorcount=ut_sensorcount+1;
+   ot_sensorcount=ot_sensorcount+1;
    delay(500);
   }else{
-    ut_sensorcount=0;
+    ot_sensorcount=0;
     delay(500);
     display.showNumberDec(0,false);
-    digitalWrite(ut_status,LOW);
+    digitalWrite(ot_status,LOW);
   }
 
   
@@ -214,31 +217,28 @@ void loop() {
    Serial.println("Motor Running..!");
    display.showNumberDec(1, false, 1, 0);
    display.showNumberDec((motor_time/60)+1,false);  
-   if(motor_time<=0 || ot_sensorstatus==0 || error_sensorstatus==0){
+   if(motor_time<=0 || ut_sensorstatus==0 || error_sensorstatus==0){
+    display.setSegments(seg_empty);
+    delay(500);
+    display.clear();
     Serial.print("Sensor Count:");
     Serial.println(ot_sensorcount);
     Serial.println("Tank Full or Timed Out..!");
-    ot_sensorcount=ot_sensorcount+1;
-      if(ot_sensorcount>=5){
-        digitalWrite(buzzer, LOW);
+    ut_sensorcount=ut_sensorcount+1;
+      if(ut_sensorcount>=5){
+        digitalWrite(buzzer,LOW);
         digitalWrite(auto_status, LOW);
         motor_status=0;
-        ot_sensorcount=0;
+        ut_sensorcount=0;
         display.showNumberDec(0,false); 
         motor_time=(motor_duration)*60;
       }else{
       //ot_sensorcount=0;
       } 
    }else{
-    ot_sensorcount=0;
+    ut_sensorcount=0;
    }
   }
   delay(500);
   count=count+1;
-  //if(count>=90){
-  //  Serial.println("Sleep Start....!");
-  //  ESP.deepSleep(30e6);
-  //}
-  
-  
  }

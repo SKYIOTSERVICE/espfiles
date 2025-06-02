@@ -5,7 +5,7 @@
 #define ss 15
 #define rst 16
 #define dio0 2
-#define networkid "1023"
+#define networkid "1008"
 #define deviceid "1008"
  
 int counter = 10;
@@ -48,9 +48,9 @@ void setup()
 void loop() 
 {
 
-  Serial.print("Sending packet: ");
-  Serial.println(counter);
-  Serial.print("Analog Value:");
+  //Serial.print("Sending packet: ");
+  //Serial.println(counter);
+  //Serial.print("Analog Value:");
   Serial.println(analogRead(A0));
   if(digitalRead(tonepin)==0){
       if(state==0){
@@ -68,6 +68,10 @@ void loop()
   LoRa.print(counter);
   LoRa.print(value);
   LoRa.endPacket();
+  Serial.print(networkid);
+  Serial.print(deviceid);
+  Serial.print(counter);
+  Serial.print(value);
  
   counter++;
   if(counter>=90){
@@ -78,4 +82,3 @@ void loop()
  
   delay(100);
 }
-

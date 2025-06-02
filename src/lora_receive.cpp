@@ -55,9 +55,9 @@ void loop()
       Serial.println(LoRaData); 
       int n=LoRaData.length();
       String SubData1=LoRaData.substring(0,4);
-      String SubData2=LoRaData.substring(10,12);
+      String SubData2=LoRaData.substring(6,8);
       Serial.println(SubData1);
-      if(SubData1.equals("1001") && SubData2.equals("11")){
+      if(SubData1.equals("1009") && SubData2.equals("11")){
         temp_count++;
         Serial.println("Running..................");
         if(temp_count>=10){

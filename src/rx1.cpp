@@ -8,6 +8,7 @@
 SoftwareSerial receiverSerial(RECEIVER_RX_PIN, RECEIVER_TX_PIN);
 
 const int ledPin = LED_BUILTIN; // Define the pin connected to the LED
+String input;
 
 void setup() {
   Serial.begin(115200); // Initialize hardware serial communication
@@ -16,7 +17,17 @@ void setup() {
 }
 
 void loop() {
-  if (receiverSerial.available() > 0) {
+
+  if(receiverSerial.available() > 0) {
+    input = receiverSerial.readStringUntil('\r');
+    Serial.print("Received: ");
+    Serial.println(input);
+    receiverSerial.flush();
+  }else{
+  }
+  
+  /*
+    if (receiverSerial.available() > 0) {
     int data = receiverSerial.read(); // Read data from sender
     Serial.println(data);
     if (data == 48) {
@@ -27,4 +38,6 @@ void loop() {
       Serial.println("LED ON");
     }
   }
+  */
+  delay(1000);
 }
