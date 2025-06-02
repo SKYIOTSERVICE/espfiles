@@ -78,7 +78,7 @@ void setup() {
   pinMode(ot_sensor, INPUT_PULLUP);
   pinMode(ut_sensor, INPUT_PULLUP);
   pinMode(auto_status, OUTPUT);
-  digitalWrite(buzzer, HIGH);
+  digitalWrite(buzzer, LOW);
   motor_status=1;
   digitalWrite(auto_status, HIGH);
   

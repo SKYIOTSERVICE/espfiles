@@ -5,8 +5,8 @@
 #define ss 15
 #define rst 16
 #define dio0 2
-#define networkid "1008"
-#define deviceid "1008"
+#define networkid "1002"
+#define deviceid "1002"
  
 int counter = 10;
 const int tonepin = D1;

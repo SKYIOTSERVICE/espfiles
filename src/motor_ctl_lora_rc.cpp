@@ -162,7 +162,7 @@ void loop() {
       String devicestatus=LoRaData.substring(8,10);
       display.setSegments(seg_full);
       Serial.println(deviceid);
-      if(deviceid.equals("1008")){
+      if(deviceid.equals("1002")){
         lora_pac_count++;
         Serial.print("Packets:");
         Serial.println(lora_pac_count);

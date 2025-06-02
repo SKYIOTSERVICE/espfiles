@@ -56,7 +56,8 @@ void setup() {
   pinMode(ut_status, OUTPUT);
   pinMode(ot_sensor, INPUT_PULLUP);
   pinMode(ut_sensor, INPUT_PULLUP);
-  pinMode(auto_status, INPUT_PULLUP);
+  pinMode(auto_status, OUTPUT);
+  digitalWrite(auto_status, LOW);
   digitalWrite(buzzer, LOW);
   
   delay(1000);
