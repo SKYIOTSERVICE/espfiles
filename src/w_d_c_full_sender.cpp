@@ -1,11 +1,12 @@
 #include <LoRa.h>
 #include <SPI.h>
 //#include <ESP8266WiFi.h>
+// Anupam changes are here.
 
 #define ss 15
 #define rst 16
 #define dio0 2
-#define networkid "2011"
+#define networkid "2012"
 #define deviceid "01"
  
 int counter = 1;
@@ -21,9 +22,6 @@ int volt_state=1;
 int temp_count1=0;
 int temp_count2=0;
 int temp_count3=0;
-const int ug_sensor = D7;
-int ug_sensorstatus=0;
-int ug_sensorcount=0;
  
 void setup() 
 {
@@ -32,7 +30,6 @@ void setup()
   pinMode(hsen, INPUT_PULLUP); 
   pinMode(lsen, INPUT_PULLUP);
   pinMode(spin, OUTPUT);
-   pinMode(ug_sensor, INPUT_PULLUP);
 
   while (!Serial);
   Serial.println("LoRa Sender");
@@ -58,11 +55,11 @@ void send_data(){
     LoRa.print(vstate1);
     LoRa.print(vstate2);
     LoRa.endPacket(); 
-    // Serial.print(".");
-    // Serial.print(networkid);
-    // Serial.print(deviceid);
-    // Serial.print(vstate1);
-    // Serial.print(vstate2);
+    Serial.print(".");
+    Serial.print(networkid);
+    Serial.print(deviceid);
+    Serial.print(vstate1);
+    Serial.print(vstate2);
     
     delay(200);
   }
@@ -70,11 +67,7 @@ void send_data(){
 }
  
 void loop() 
-{  
-  ug_sensorstatus=digitalRead(ug_sensor);
-  Serial.println("ug_sensorstatus:");
-  Serial.println(ug_sensorstatus);
-
+{
   Serial.print("Sending packet: ");
   Serial.println(counter);
 

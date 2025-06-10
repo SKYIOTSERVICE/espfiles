@@ -182,10 +182,10 @@ void loop() {
       String devicestatus=LoRaData.substring(6,8);
       Serial.println(deviceid);
       Serial.println(devicestatus);
-      if(deviceid.equals("2011") && devicestatus.equals("00")){
+      if(deviceid.equals("2013") && devicestatus.equals("00")){
         display.clear();
         display.setSegments(seg_full);
-        delay(500);
+        delay(300);
         tcount1++;
         Serial.print("Packets:");
         Serial.println(tcount1);
@@ -204,7 +204,7 @@ void loop() {
       }
 
 
-      if(deviceid.equals("2011") && devicestatus.equals("11") ){
+      if(deviceid.equals("2013") && devicestatus.equals("11") ){
         tcount2++;
         Serial.print("Packets:");
         Serial.println(tcount2);
@@ -221,7 +221,7 @@ void loop() {
         tcount2=0;
       }
 
-      if(deviceid.equals("2011") && devicestatus.equals("22")){
+      if(deviceid.equals("2013") && devicestatus.equals("22")){
         tcount3++;
         Serial.print("Packets:");
         Serial.println(lora_pac_count);

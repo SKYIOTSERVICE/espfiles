@@ -1,18 +1,27 @@
+
 #include <LoRa.h>
 #include <SPI.h>
+#include <EEPROM.h>
 //#include <ESP8266WiFi.h>
 
 #define ss 15
 #define rst 16
 #define dio0 2
 #define networkid "1023"
-#define deviceid "02"
+//#define deviceid "01"
+
+
  
 int counter = 10;
 const int hsen = D2;
 const int lsen = D9;
 const int hpin = D1;
 const int sled = LED_BUILTIN;
+const int input1 = D9;
+int addr1 = 0;
+byte memval1;
+int deviceNum = 1;
+String deviceid = "01";
 int value = 11;
 int state=0;
 int vstate1=2;
@@ -26,17 +35,62 @@ int rnum1 = 1;
  
 void setup() 
 {
-  Serial.begin(115200); 
+  Serial.begin(115200);
+  EEPROM.begin(512);
+  pinMode(input1, INPUT_PULLUP); 
   pinMode(D0, WAKEUP_PULLUP);
-  //WiFiMode(WIFI_STA);
-  //WiFi.disconnect(); 
-  //WiFi.mode(WIFI_OFF);
   pinMode(hsen, INPUT_PULLUP); 
   pinMode(lsen, INPUT_PULLUP);
   pinMode(hpin, OUTPUT);
   pinMode(sled, OUTPUT);
   digitalWrite(hpin,LOW);
   digitalWrite(sled,HIGH);
+
+  memval1=EEPROM.read(addr1);
+  deviceNum=memval1;
+  if(deviceNum<1 || deviceNum>6){
+    deviceNum=1;
+  deviceid = (deviceNum < 10) ? "0" + String(deviceNum) : String(deviceNum);
+  Serial.print("Device ID loaded from EEPROM: ");
+  Serial.println(deviceid);
+  }
+
+  
+  int temp_count=0;
+  while(digitalRead(input1)==0){
+    temp_count=temp_count+1;
+    Serial.println(temp_count);
+    if(temp_count>=3){
+      Serial.println("Change...!");
+      if(deviceNum<6){
+        deviceNum=deviceNum+1;
+      }else{
+        deviceNum=1;
+      }
+      temp_count=0;
+      Serial.print("Motor deviceid:");
+      Serial.println(deviceid);
+      
+      EEPROM.write(addr1, deviceNum);
+      if (EEPROM.commit()) {
+      Serial.println("EEPROM successfully committed");
+      } else {
+      Serial.println("ERROR! EEPROM commit failed");
+      }
+
+      if(deviceNum<1 || deviceNum>6){
+        deviceNum=1;
+      }
+      
+
+    }
+    delay(1000);
+  }
+
+  if(deviceNum<1 || deviceNum>6){
+        deviceNum=1;
+  }
+
   while (!Serial);
   Serial.println("LoRa Sender");
   LoRa.setPins(ss, rst, dio0);    //setup LoRa transceiver module
@@ -52,7 +106,7 @@ void setup()
   Serial.println("LoRa Initializing OK!");
 }
 
-void send_data(int rn){
+void send_data(){
   int i;
   for(i=0;i<=(10);i++){
     LoRa.beginPacket();   //Send LoRa packet to receiver
@@ -61,10 +115,6 @@ void send_data(int rn){
     LoRa.print(vstate1);
     LoRa.print(vstate2);
     LoRa.endPacket(); 
-    Serial.print(networkid);
-    Serial.print(deviceid);
-    Serial.print(vstate1);
-    Serial.print(vstate2);
     Serial.print(".");
     delay(100);
   }
@@ -76,8 +126,6 @@ void loop()
 
   Serial.print("Sending packet: ");
   Serial.println(counter);
-  rnum=random(2,8);
-  rnum=random(1,4);
 
   if(digitalRead(hsen)==0 && digitalRead(hpin)==1){
     temp_count1=temp_count1+1;
@@ -88,7 +136,7 @@ void loop()
       vstate1=0;
       vstate2=0;
     }
-    if(temp_count1>=10){
+    if(temp_count1>=15){
       Serial.println("LOW....");
       digitalWrite(hpin, LOW);
       temp_count1=0;
@@ -115,12 +163,12 @@ void loop()
 
   //=======================
 
-  if(digitalRead(hpin)==1 && digitalRead(lsen)!=0 && digitalRead(hsen)!=0){
+  if(digitalRead(hpin)==1 && digitalRead(lsen)!=0){
     temp_count3=temp_count3+1;
     if(temp_count3>=3){
       state=2;
-      vstate1=2;
-      vstate2=2;
+      vstate1=0;
+      vstate2=0;
     }
     if(temp_count3>=10){
       digitalWrite(hpin, LOW);
@@ -134,10 +182,10 @@ void loop()
   if(counter>=200){
     counter=10;
   }
-  send_data(rnum);
+  send_data();
   digitalWrite(sled,LOW);
   delay(50);
   digitalWrite(sled,HIGH);
   delay(50);
-  delay(4000);
+  delay(2000);
 }

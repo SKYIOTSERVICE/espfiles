@@ -29,13 +29,16 @@ const int ut_sensor = D2;
 const int buzzer = D8;
 const int ot_status = D6;
 const int ut_status = D5;
-const int auto_status = D7;
+//const int auto_status = D7;
+const int ug_sensor = D7;
 const int input1 = D9;
 int ot_sensorstatus=1;
 int ut_sensorstatus=1;
+int ug_sensorstatus=0;
 int error_sensorstatus=1;
 int ot_sensorcount=0;
 int ut_sensorcount=0;
+int ug_sensorcount=0;
 
 int motor_status=0;
 int motor_status_manual=0;
@@ -61,6 +64,13 @@ const uint8_t seg_full[] = {
   SEG_D,                           
   SEG_D           
   };
+  const uint8_t seg_ugempty[] = {
+  0x00,                                              
+  SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,             
+  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G,             
+  0x00
+};
+
 
 TM1637Display display(CLK, DIO);
   uint8_t data[] = { 0xff, 0xff, 0xff, 0xff };
@@ -77,10 +87,11 @@ void setup() {
   pinMode(ut_status, OUTPUT);
   pinMode(ot_sensor, INPUT_PULLUP);
   pinMode(ut_sensor, INPUT_PULLUP);
-  pinMode(auto_status, OUTPUT);
+  //pinMode(auto_status, OUTPUT);
+   pinMode(ug_sensor, INPUT_PULLUP);
   digitalWrite(buzzer, LOW);
   motor_status=1;
-  digitalWrite(auto_status, HIGH);
+  //digitalWrite(auto_status, HIGH);
   
   delay(1000);
   memval1=EEPROM.read(addr1);
@@ -150,13 +161,18 @@ void loop() {
   Serial.println(motor_duration);
   ot_sensorstatus=digitalRead(ot_sensor);
   ut_sensorstatus=digitalRead(ut_sensor);
+  ug_sensorstatus=digitalRead(ug_sensor);
   Serial.print("Motor Time:");
   Serial.println(motor_time); 
   Serial.print("HighWater Tank Status:");
   Serial.println(ot_sensorstatus);
   Serial.print("LowWater Status:");
   Serial.println(ut_sensorstatus);
+  Serial.print("ug_sensorstatus:");
+  Serial.println(ug_sensorstatus);
 
+if (ug_sensorstatus==1)
+{
   if(digitalRead(input1)==0){
     Serial.println("Button Clicked...!");
     if(motor_status_manual==0){
@@ -168,7 +184,7 @@ void loop() {
     }else{
       if(motor_status_manual==1){
         digitalWrite(buzzer,LOW);
-        digitalWrite(auto_status, LOW);
+       // digitalWrite(auto_status, LOW);
         Serial.println("Motor is now stopped..!");
         motor_status_manual=0;
         motor_status=0;
@@ -221,7 +237,7 @@ void loop() {
     ot_sensorcount=ot_sensorcount+1;
       if(ot_sensorcount>=5){
         digitalWrite(buzzer, LOW);
-        digitalWrite(auto_status, LOW);
+        //digitalWrite(auto_status, LOW);
         motor_status=0;
         ot_sensorcount=0;
         display.showNumberDec(0,false); 
@@ -239,6 +255,33 @@ void loop() {
   //  Serial.println("Sleep Start....!");
   //  ESP.deepSleep(30e6);
   //}
-  
-  
- }
+  }
+
+  else
+  {
+    //  digitalWrite(buzzer, LOW);
+    //  display.setSegments(seg_ugempty);
+    if(ug_sensorstatus==0){
+        Serial.println(ug_sensorcount);
+        Serial.println("Under Ground Tank Empty");
+        
+        // display.setSegments(seg_ugempty);
+        if(ug_sensorcount>=20){
+           digitalWrite(buzzer, LOW);
+           delay(1000);
+           display.setSegments(seg_ugempty);
+           ug_sensorcount=0;
+
+        }
+        ug_sensorcount=ug_sensorcount+1; 
+         delay(500);
+        
+    }else{
+        ug_sensorcount=0;
+        delay(500);
+    }
+
+
+    }
+
+}

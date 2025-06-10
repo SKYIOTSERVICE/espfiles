@@ -77,10 +77,10 @@ void setup() {
   pinMode(ut_status, OUTPUT);
   pinMode(ot_sensor, INPUT_PULLUP);
   pinMode(ut_sensor, INPUT_PULLUP);
-  pinMode(auto_status, OUTPUT);
+  pinMode(auto_status, INPUT_PULLUP);
   digitalWrite(buzzer, LOW);
   motor_status=1;
-  digitalWrite(auto_status, HIGH);
+  digitalWrite(auto_status, LOW);
   
   delay(1000);
   memval1=EEPROM.read(addr1);
@@ -121,9 +121,16 @@ void setup() {
   if(motor_duration<1 || motor_duration>100){
     motor_duration=30;
   }
-   
+   digitalWrite(buzzer,LOW);
   motor_time=motor_duration*60;
   empty_start=0;
+//   auto =digitalRead(auto_status);
+//   Serial.println(auto_status);
+
+    if(digitalRead(auto_status)==0){
+    motor_status=1;
+    digitalWrite(buzzer,HIGH);
+  }
 
   const uint8_t seg_duration[] = {
   SEG_A | SEG_B | SEG_E | SEG_F | SEG_G,           

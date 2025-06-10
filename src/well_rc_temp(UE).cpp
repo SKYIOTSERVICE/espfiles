@@ -27,6 +27,10 @@ int tcount1=0;
 int tcount2=0;
 int tcount3=0;
 
+const int ug_sensor = D1;
+int ug_sensorstatus=0;
+int ug_sensorcount=0;
+
 int motor_status=0;
 int motor_time=0;
 int empty_start=0;
@@ -46,11 +50,20 @@ const uint8_t seg_empty[] = {
 
 
 const uint8_t seg_full[] = {
-  0x00,                 // F
-  SEG_A | SEG_E | SEG_F | SEG_G,          // U
-  SEG_A | SEG_E | SEG_F | SEG_G,                          // L
+  SEG_A | SEG_E | SEG_F | SEG_G,                 // F
+  SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,         // U
+  SEG_D | SEG_E | SEG_F,                         // L
+  SEG_D | SEG_E | SEG_F                          // L
+};
+
+  const uint8_t seg_ugempty[] = {
+  0x00,                                              
+  SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,             
+  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G,             
   0x00
 };
+
+
 
 
 TM1637Display display(CLK, DIO);
@@ -66,6 +79,7 @@ void setup() {
   pinMode(buzzer, OUTPUT);
   //pinMode(ot_sensor, INPUT_PULLUP);
   //pinMode(ut_sensor, INPUT_PULLUP);
+    pinMode(ug_sensor, INPUT_PULLUP);
   digitalWrite(buzzer, LOW);
   motor_status=0;  
   delay(1000);
@@ -146,6 +160,14 @@ void setup() {
 }
 
 void loop() {
+
+  ug_sensorstatus=digitalRead(ug_sensor);
+  
+  Serial.print("ug_sensorstatus:");
+  Serial.println(ug_sensorstatus);
+  if (ug_sensorstatus==1)
+  {
+  
   int packetSize = LoRa.parsePacket();    // try to parse packet
   if (packetSize) 
   {
@@ -160,10 +182,10 @@ void loop() {
       String devicestatus=LoRaData.substring(6,8);
       Serial.println(deviceid);
       Serial.println(devicestatus);
-      if(deviceid.equals("2012") && devicestatus.equals("00")){
+      if(deviceid.equals("2013") && devicestatus.equals("00")){
         display.clear();
         display.setSegments(seg_full);
-        delay(500);
+        delay(300);
         tcount1++;
         Serial.print("Packets:");
         Serial.println(tcount1);
@@ -182,7 +204,7 @@ void loop() {
       }
 
 
-      if(deviceid.equals("2012") && devicestatus.equals("11") ){
+      if(deviceid.equals("2013") && devicestatus.equals("11") ){
         tcount2++;
         Serial.print("Packets:");
         Serial.println(tcount2);
@@ -199,7 +221,7 @@ void loop() {
         tcount2=0;
       }
 
-      if(deviceid.equals("2012") && devicestatus.equals("22")){
+      if(deviceid.equals("2013") && devicestatus.equals("22")){
         tcount3++;
         Serial.print("Packets:");
         Serial.println(lora_pac_count);
@@ -271,7 +293,33 @@ void loop() {
    }
    delay(500);
   }
+}
+  else
+  {
+    //  digitalWrite(buzzer, LOW);
+    //  display.setSegments(seg_ugempty);
+    if(ug_sensorstatus==0){
+        Serial.println(ug_sensorcount);
+        Serial.println("Under Ground Tank Empty");
+        
+        // display.setSegments(seg_ugempty);
+        if(ug_sensorcount>=20){
+           digitalWrite(buzzer, LOW);
+           delay(1000);
+           display.setSegments(seg_ugempty);
+           ug_sensorcount=0;
 
+        }
+        ug_sensorcount=ug_sensorcount+1; 
+         delay(500);
+        
+    }else{
+        ug_sensorcount=0;
+        delay(500);
+    }
+
+
+    }
   delay(500);
   count=count+1;
  }
