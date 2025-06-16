@@ -115,12 +115,12 @@ void loop()
 
   //=======================
 
-  if(digitalRead(hpin)==1 && digitalRead(lsen)!=0 && digitalRead(hsen)!=0){
+  if(digitalRead(hpin)==1 && digitalRead(lsen)!=0){
     temp_count3=temp_count3+1;
     if(temp_count3>=3){
       state=2;
-      vstate1=2;
-      vstate2=2;
+      vstate1=0;
+      vstate2=0;
     }
     if(temp_count3>=10){
       digitalWrite(hpin, LOW);
