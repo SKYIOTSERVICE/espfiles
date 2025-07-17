@@ -3,35 +3,38 @@
 #include <WiFiClientSecure.h>
 #include <time.h>
 
-const char* ssid = "Anupam";
-const char* password = "12345678";
-
+const char* ssid = "TI IndustriesExt";
+const char* password = "9845574336";
 const char* serverName = "https://anupam-32ea7-default-rtdb.firebaseio.com/user/uid/1011.json";
 
 int sdevice[8] = {0};
 int prev_sdevice[8] = {0};
 String etime[8];
 String ftime[8];
+
 char motor_st = 'S';
+const int mt_st = D8;
+int mt_status = 0;
 
+const int sled = D7;
 
+unsigned long mt_last_active_time = 0;
+const unsigned long MT_TIMEOUT = 5 * 60 * 1000; 
 
 void sendDataToFirebase();
 void checkWiFiConnection();
 String getCurrentTime();
+void readMtStFromFirebase();
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\nESP8266 Receiver Starting...");
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
 
   int retries = 0;
   while (WiFi.status() != WL_CONNECTED && retries < 20) {
     delay(500);
-    Serial.print(".");
     retries++;
   }
 
@@ -49,19 +52,25 @@ void setup() {
     etime[i] = "0000";
     ftime[i] = "0000";
   }
+
+  pinMode(mt_st, OUTPUT);
+  digitalWrite(mt_st, mt_status);
+
+  pinMode(sled, OUTPUT);
+  digitalWrite(sled, LOW);
+
+  if (mt_status == 1) {
+    mt_last_active_time = millis();
+  }
 }
 
 void loop() {
   checkWiFiConnection();
+ 
 
   if (Serial.available()) {
     String received = Serial.readStringUntil('\n');
     received.trim();
-
-    Serial.print("Received: ");
-    Serial.println(received);
-    Serial.print("Length: ");
-    Serial.println(received.length());
 
     if (received.length() == 9) {
       bool stateChanged = false;
@@ -78,32 +87,44 @@ void loop() {
             else ftime[i] = currentTime;
             stateChanged = true;
           }
-        } else {
-          Serial.println("Invalid character in input.");
         }
       }
-      char newStatus = received.charAt(8);  
-      if (newStatus != motor_st) {
-        motor_st = newStatus;             
-        stateChanged = true;                
-        }
 
-      motor_st = received.charAt(8);
-      
+      char newStatus = received.charAt(8);
+      if (newStatus != motor_st) {
+        motor_st = newStatus;
+        stateChanged = true;
+      }
 
       if (stateChanged) {
         Serial.print("State changed. motor_st: ");
         Serial.println(motor_st);
         sendDataToFirebase();
-       } 
-        else
-       {
-        Serial.println("No change in state.");
+      } else {
+        Serial.print("no change");
+         readMtStFromFirebase();
       }
-    } else {
-      Serial.println("Invalid data length.");
     }
   }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    digitalWrite(sled, HIGH);
+    delay(2000);
+     digitalWrite(sled, LOW);
+    delay(2000);
+  
+  }
+
+  if (mt_status == 1 && millis() - mt_last_active_time > MT_TIMEOUT) {
+    Serial.println("Motor timeout reached. Turning off mt_status.");
+
+    mt_status = 0;
+    digitalWrite(mt_st, mt_status);
+    motor_st = 'S'; 
+
+    sendDataToFirebase(); 
+  }
+
   delay(200);
 }
 
@@ -148,6 +169,7 @@ void sendDataToFirebase() {
 
     String jsonData = "{";
     jsonData += "\"motor_st\":\"" + String(motor_st) + "\",";
+    jsonData += "\"mt_status\":\"" + String(mt_status) + "\",";
     jsonData += "\"sdevice\":[";
 
     for (int i = 0; i < 8; i++) {
@@ -176,5 +198,66 @@ void sendDataToFirebase() {
     https.end();
   } else {
     Serial.println("WiFi not connected. Cannot send data.");
+  }
+}
+
+void readMtStFromFirebase() {
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClientSecure client;
+    client.setInsecure();
+
+    HTTPClient https;
+    https.begin(client, serverName);
+    int httpCode = https.GET();
+
+    if (httpCode > 0) {
+      String payload = https.getString();
+      Serial.println("Firebase GET: " + payload);
+
+      int index = payload.indexOf("\"mt_status\":");
+      if (index != -1) {
+        int startIndex = index + 12;
+        int endIndex = payload.indexOf(",", startIndex);
+        if (endIndex == -1) {
+          endIndex = payload.indexOf("}", startIndex);
+        }
+
+        String mt_value_str = payload.substring(startIndex, endIndex);
+        mt_value_str.replace("\"", "");
+        mt_value_str.trim();
+
+        Serial.print("Parsed mt_status value: ");
+        Serial.println(mt_value_str);
+
+        int new_mt_status = mt_value_str.toInt();
+
+        digitalWrite(mt_st, new_mt_status);
+
+        if (new_mt_status != mt_status) {
+          mt_status = new_mt_status;
+          Serial.print("Updated mt_status pin to: ");
+          Serial.println(mt_status);
+
+          char newMotorState = (mt_status == 1) ? 'R' : 'S';
+          if (motor_st != newMotorState) {
+            motor_st = newMotorState;
+            Serial.print("Updated motor_st to: ");
+            Serial.println(motor_st);
+            sendDataToFirebase();
+          }
+
+          if (mt_status == 1) {
+            mt_last_active_time = millis();
+          }
+        }
+      } else {
+        Serial.println("mt_status field not found.");
+      }
+    } else {
+      Serial.print("Firebase GET failed, error: ");
+      Serial.println(httpCode);
+    }
+
+    https.end();
   }
 }
