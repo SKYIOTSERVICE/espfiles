@@ -3,11 +3,11 @@
 #include <WiFiClientSecure.h>
 #include <time.h>
 
-const char* ssid = "Anupam";
-const char* password = "12345678";
-const char* serverName = "https://skyiot-597d5-default-rtdb.firebaseio.com/uid/motor.json";
-const char* motorServerName = "https://flutterapp-75a79-default-rtdb.firebaseio.com/uid/motor.json";
-const char* statusServerName = "https://skyiot-597d5-default-rtdb.firebaseio.com/uid/status.json";
+const char* ssid = "TI Solar";
+const char* password = "maner@5003";
+const char* serverName = "https://tinodes1023.asia-southeast1.firebasedatabase.app/uid/motor.json";
+const char* motorServerName = "https://timotor1023.asia-southeast1.firebasedatabase.app/uid/motor.json";
+const char* statusServerName = "https://tinodes1023.asia-southeast1.firebasedatabase.app/uid/status.json";
 
 int sdevice[8] = {0};
 int prev_sdevice[8] = {0};
@@ -308,7 +308,7 @@ void updateDeviceInFirebase(int deviceIndex) {
     client.setInsecure();
 
     HTTPClient https;
-    String deviceUrl = String("https://skyiot-597d5-default-rtdb.firebaseio.com/uid/motor/sdevice/") + deviceIndex + ".json";
+    String deviceUrl = String("https://tinodes1023.asia-southeast1.firebasedatabase.app/uid/motor/sdevice/") + deviceIndex + ".json";
     https.begin(client, deviceUrl);
     https.addHeader("Content-Type", "application/json");
 
